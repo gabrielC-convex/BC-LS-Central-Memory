@@ -1,0 +1,60 @@
+# Closed tag vocabulary for kb/ — the only tags allowed in kb/bc and kb/lscentral.
+# Why closed: without it you get pos / POS / point-of-sale / casa-marcat as four different
+# tags and nothing is findable. Extend deliberately: add the tag here FIRST, then use it.
+# Lowercase only. `python tools/kb.py check` enforces this list.
+
+tags:
+  # platform & publishing
+  - al
+  - app.json
+  - publish
+  - dev-endpoint
+  - extension
+  - dependency
+  - version
+  - runtime
+  # object model
+  - object-id
+  - idranges
+  - tenant
+  - collision
+  - per-type
+  - pages
+  - actions
+  - buttons
+  - fields
+  - events
+  - integration-event
+  # errors & diagnostics
+  - error-message
+  - misleading
+  - al1024
+  - al0247
+  - troubleshooting
+  # symbols & tooling
+  - symbols
+  - symbolreference
+  - alpackages
+  - nuget
+  - feed
+  - mssymbols
+  - appsourcesymbols
+  - download
+  - no-docker
+  - bccontainerhelper
+  - catalog
+  - runobject
+  - caption
+  - tooltip
+  - metadata
+  # testing
+  - testing
+  - test-runner
+  - sandbox
+  # retail / LS Central domains (extend as facts arrive)
+  - pos
+  - retail
+  - replenishment
+  - transfer-order
+  - warehouse
+  - posting
