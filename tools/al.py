@@ -33,7 +33,14 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 DB_PATH = ROOT / ".claude" / "al-symbols.sqlite"
-PACKAGE_DIRS = [ROOT / "app" / ".alpackages", ROOT / "test" / ".alpackages"]
+# Both AL workspace layouts: symbols next to the AL project (app/.alpackages, the layout the
+# AL extension creates) and symbols at the repo root (used when the repo holds more than the
+# AL project). Missing directories are skipped, so listing all of them is harmless.
+PACKAGE_DIRS = [
+    ROOT / "app" / ".alpackages",
+    ROOT / "test" / ".alpackages",
+    ROOT / ".alpackages",
+]
 
 OBJECT_BUCKETS = {
     "Tables": "table", "Pages": "page", "Codeunits": "codeunit", "Reports": "report",
@@ -121,9 +128,18 @@ def read_symbol_json(app_path: Path) -> dict | None:
         return None
     try:
         z = zipfile.ZipFile(io.BytesIO(raw[pk:]))
-        with z.open("SymbolReference.json") as f:
-            return json.loads(f.read().decode("utf-8-sig"))
-    except (KeyError, zipfile.BadZipFile, json.JSONDecodeError):
+        # The entry is not always at the archive root, and some publishers ship it with a
+        # different case (e.g. 'symbolreference.json'), so resolve it by name.
+        name = next((n for n in z.namelist()
+                     if n.rsplit("/", 1)[-1].lower() == "symbolreference.json"), None)
+        if name is None:
+            return None
+        text = z.read(name).decode("utf-8-sig")
+        # Several publishers (all Intelligent Systems packages, for one) pad the entry after
+        # the closing brace. json.loads() then dies with "Extra data" and the package looks
+        # like it has no symbols at all — raw_decode stops at the end of the first value.
+        return json.JSONDecoder().raw_decode(text)[0]
+    except (KeyError, zipfile.BadZipFile, json.JSONDecodeError, UnicodeDecodeError):
         return None
 
 

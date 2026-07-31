@@ -30,7 +30,19 @@ tags:
   - misleading
   - al1024
   - al0247
+  - pte0004
   - troubleshooting
+  - silent-failure
+  - parsing
+  # per-tenant extensions & SaaS deployment
+  - pte
+  - saas
+  - permissionset
+  - unpublish
+  # reports & layouts
+  - report
+  - excel
+  - layout
   # symbols & tooling
   - symbols
   - symbolreference
