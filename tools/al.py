@@ -144,10 +144,24 @@ def read_symbol_json(app_path: Path) -> dict | None:
 
 
 def current_packages() -> list[Path]:
-    out = []
+    """Every .app across the known package dirs, with byte-identical duplicates dropped.
+
+    A workspace that has both app/.alpackages and test/.alpackages (or a copy at the repo
+    root) holds the SAME dependency package more than once. Indexing it twice makes every
+    lookup ambiguous — `al.py table 99001473` answers "2 tables match, be more specific"
+    with no way to be more specific, because the two rows are the same object. Dedupe on
+    (file name, size): same package, indexed once.
+    """
+    out, seen = [], set()
     for d in PACKAGE_DIRS:
-        if d.is_dir():
-            out.extend(sorted(d.glob("*.app")))
+        if not d.is_dir():
+            continue
+        for p in sorted(d.glob("*.app")):
+            key = (p.name.lower(), p.stat().st_size)
+            if key in seen:
+                continue
+            seen.add(key)
+            out.append(p)
     return out
 
 
@@ -312,14 +326,26 @@ def cmd_table(key: str, limit: int) -> None:
         return
     app, _t, oid, name, caption, _tg, _st = rows[0]
     _out(f'table {oid} "{name}"  Caption="{caption}"  [{app}]\n')
+    # Fetch one past the limit so truncation can be REPORTED rather than implied. Printing
+    # "fields (60)" for a 132-field table reads as "this table has 60 fields" and sends the
+    # reader off to conclude a field does not exist — which is worse than no answer at all.
+    total = con.execute(
+        """SELECT COUNT(*) FROM fields
+           WHERE table_id = ? OR table_name = ? COLLATE NOCASE""", [oid, name]).fetchone()[0]
     flds = con.execute(
         """SELECT fid, name, ftype, caption, app, table_name FROM fields
            WHERE table_id = ? OR table_name = ? COLLATE NOCASE ORDER BY fid LIMIT ?""",
         [oid, name, limit]).fetchall()
-    _out(f"fields ({len(flds)}):")
+    if len(flds) < total:
+        _out(f"fields ({len(flds)} shown of {total} — the rest are hidden by --limit {limit}):")
+    else:
+        _out(f"fields ({total}):")
     for fid, fname, ftype, fcap, fapp, tname in flds:
         ext = "" if fapp == app and tname == name else f"   [+{fapp}]"
         _out(f"  {fid:>6}  {fname:40} {ftype:24} {fcap}{ext}")
+    if len(flds) < total:
+        _out(f"  … {total - len(flds)} more fields not shown. Re-run with --limit {total} "
+             f"before concluding a field does not exist.")
     con.close()
 
 
@@ -427,11 +453,13 @@ def main() -> None:
                         ("whoruns", None), ("events", None)]:
         p = sub.add_parser(name)
         p.add_argument("key")
-        p.add_argument("-k", type=int, default=120 if name == "page" else 60)
+        # --limit is the discoverable spelling; -k stays for muscle memory.
+        p.add_argument("-k", "--limit", dest="k", type=int,
+                       default=120 if name == "page" else 60)
     p = sub.add_parser("object")
     p.add_argument("otype", choices=sorted(set(OBJECT_BUCKETS.values())))
     p.add_argument("key")
-    p.add_argument("-k", type=int, default=80)
+    p.add_argument("-k", "--limit", dest="k", type=int, default=80)
     sub.add_parser("stats")
     a = ap.parse_args()
     if a.cmd == "index":
