@@ -14,6 +14,7 @@ anyway, and the knowledge base must be portable across projects and teams.
 | `kb/bc/` | Business Central **default**: platform, Base App, behaviors, traps, decoded error messages | **ZERO** mentions of any client, tenant, environment or project |
 | `kb/lscentral/` | LS Central **default**: LSC objects, POS, retail, standard flows | same — ZERO client specifics |
 | `kb/client/lensa/` | Things built or learned **specifically for Lensa** | anything; delete the whole folder to keep only default knowledge |
+| `kb/practice/` | **How we work**: the verify loop, how knowledge and memory are kept apart, where documentation is looked up | no client specifics; not a platform fact, so kept out of `bc` / `lscentral` |
 
 **Why:** the goal is for `kb/bc` + `kb/lscentral` to grow from project to project, until new
 development starts from accumulated knowledge instead of exploration — fast, cheap, minimal

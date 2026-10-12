@@ -63,6 +63,10 @@ tags:
   - testing
   - test-runner
   - sandbox
+  # auth & entra
+  - auth
+  - device-login
+  - entra
   # retail / LS Central domains (extend as facts arrive)
   - pos
   - retail
@@ -70,3 +74,11 @@ tags:
   - transfer-order
   - warehouse
   - posting
+  # working practice & knowledge tooling (kb/practice)
+  - kb
+  - memory
+  - documentation
+  - retrieval
+  - verification
+  - pre-commit
+  - mcp

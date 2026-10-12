@@ -270,7 +270,10 @@ def search(query: str, limit: int, scopes: list[str] | None) -> None:
         head = f"  ## {heading}" if heading else ""
         _out(f"{i:2}. [{scope}] {loc}")
         _out(f"    {title}{head}")
-        _out(f"    {re.sub(r'\\s+', ' ', snip).strip()}\n")
+        # Python < 3.12 refuses a backslash inside an f-string expression (this broke the
+        # script on a 3.9 machine) - compute the snippet first.
+        snippet = re.sub(r"\s+", " ", snip).strip()
+        _out(f"    {snippet}\n")
     con.close()
 
 
@@ -323,7 +326,7 @@ def related(ref_query: str, limit: int) -> None:
             WHERE path IN ({ph}) AND ref NOT LIKE '%' || ? || '%'
             GROUP BY ref, kind ORDER BY n DESC, ref LIMIT ?""",
         [*files, q, limit]).fetchall()
-    _out(f"\nhop 2 — co-occurring references (shared files count):")
+    _out("\nhop 2 — co-occurring references (shared files count):")
     for ref, kind, n in rows:
         _out(f"  {n:3}x  [{kind}] {ref}")
     con.close()
@@ -349,6 +352,8 @@ def check() -> None:
         if not base.exists():
             continue
         for p in base.rglob("*.md"):
+            if p.name == "README.md":
+                continue
             rel = str(p.relative_to(ROOT))
             text = p.read_text(encoding="utf-8", errors="replace")
             for i, line in enumerate(text.splitlines(), 1):

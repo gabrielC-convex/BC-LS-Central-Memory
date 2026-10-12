@@ -35,9 +35,15 @@ scope for that call specifically.
 
 ## Two smaller ones, found the same way
 
-- **`Commit()` does not survive every test runner codeunit.** Data written by one test and
-  expected by the next disappears under one runner and persists under another. If a test needs
-  state to cross a boundary, verify it actually crosses before building on it.
+- **`Commit()` does not survive every test runner codeunit** — and the mechanism is now known
+  from the runner's source (BCApps, `src/Tools/Test Framework`): isolation is not implemented
+  in AL at all, it is the **platform property `TestIsolation` on the runner codeunit**.
+  Codeunit **130450** "Test Runner - Isol. Codeunit" (`TestIsolation = Codeunit`, the default)
+  rolls back everything a test writes, commits included; codeunit **130451**
+  "Test Runner - Isol. Disabled" lets commits land for real. Test *results* survive under
+  130450 only because the runner's own triggers execute outside the isolation scope and commit
+  explicitly. So: state that must cross a test boundary requires running under 130451 —
+  no amount of `Commit()` inside the test helps under 130450.
 - **`Init()` does not reset the primary key**, so a table used as a scratch buffer keeps the key
   of the previous record unless it is cleared explicitly. Removing `AutoIncrement` from such a
   table later requires publishing with a **forced** schema sync, which is destructive — decide
