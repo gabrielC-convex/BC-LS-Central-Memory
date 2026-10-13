@@ -18,16 +18,33 @@ variants out for an order:
 | 123 | `Exclude Collect` | Internal field to indicate if the order is excluded from collect options. |
 | 124 | `Exclude Ship` | Internal field to indicate if the order is excluded from shipping options. |
 
-Checked in the symbol packages of **28.1.0.1807** and **28.2.12.4105**: both fields are there, both
+Checked in the packages of **28.1.0.1807** and **28.2.12.4105**: both fields are there, both
 Boolean. They are "internal" in the literal sense:
 
 - no page and no page extension of LS Central shows them (no control is bound to either);
 - the help site's field reference has no page for them - it has pages for 120 and 127-139 of this
-  table and skips 121-126, `Ship Order` included, even though the fields carry tooltips;
-- the symbols give no method signature that names them, so *who* sets them cannot be read without
-  the method bodies of version 28.
+  table and skips 121-126, `Ship Order` included, even though the fields carry tooltips.
 
 In **27.0.24** they do not exist: the header's field list goes 120, 121, 125, 126, 127.
+
+Who sets them and who reads them (read in the 28.1 source, identical in 28.2.12; not executed):
+
+- **set on the POS**, in codeunit 10016658 `LSC CO Create Panel`, by the choice the cashier makes
+  when creating the order - `CheckAvailabilityOfItemsForShipCollect(ShipOrder, ExcludeShip, ExcludeCollect)`:
+
+  | POS choice | procedure | `Exclude Ship` | `Exclude Collect` |
+  |---|---|---|---|
+  | Ship / Collect | `ShipCollectSelected` | false | false |
+  | Ship | `ShipSelected` | false | **true** |
+  | Collect | `CollectSelected` | **true** | false |
+
+  They are written only while the order is being created, not when an existing order is edited;
+- **read by the sourcing-location web service** (`LSCCOSourcingLocListV3Utils` / `V4Utils`,
+  `RunRequest`): with `Exclude Collect` no collecting locations are offered, with `Exclude Ship` no
+  shipping ones.
+
+So they do not say what the order *is* (that is `Ship Order`); they narrow which options the
+Ship/Collect panel is allowed to offer for it.
 
 Do not confuse them with their neighbours, which exist in every version and mean something else:
 
@@ -47,6 +64,9 @@ How to apply:
 - a production environment does not hand symbols over its dev endpoint, a sandbox on the same
   version does - download the vendor's package from there into a scratch folder (never into the
   folder the compiler reads) and read `SymbolReference.json` from it;
+- the LS Central package also carries the **full AL source** of that version (its manifest says
+  `IncludeSourceInSymbolFile="true"`): the `.al` files sit under `src/` inside the same zip, so the
+  method bodies of the running version can be read too, not only the signatures;
 - field tooltips are in the symbols even when the help has no page for the field - for LS Central
   fields the tooltip is often the only documentation.
 
